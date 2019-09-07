@@ -12,6 +12,7 @@ setup: ## Install all the build and lint dependencies
 .PHONY: mod
 mod: ## Runs mod
 	go mod verify
+	go mod vendor
 	go mod tidy
 
 .PHONY: test
