@@ -2,17 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/omerkaya1/go-telnet/internal"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-var clean bool
+var timeout int
 
 var rootCmd = &cobra.Command{
-	Use:   "go-telnet [ADDRESS] [PORT]",
+	Use:   "go-telnet [HOST ADDRESS] [PORT]",
 	Short: "telnet replica utility written in Go",
-	Long:  "Runs any programme passed to goenvdir with a specified environment variables stored in a specified folder.",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("invalid number of arguments")
@@ -24,18 +24,15 @@ var rootCmd = &cobra.Command{
 
 // Execute is a method that runs the root command of the programme
 func Execute() {
-	rootCmd.PersistentFlags().BoolVarP(&clean, "clean", "c", false, "run programme with the empty environment variables")
+	rootCmd.PersistentFlags().IntVarP(&timeout, "timeout", "t", 30, "timeout before exiting the programme")
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func rootCommand(cmd *cobra.Command, args []string) {
-	pr := internal.NewProgRunnerImpl()
-	pr.ClearEnv = clean
-	pr.EnvPath = args[0]
-	pr.ChildProg = args[1]
-	if err := pr.Execute(); err != nil {
+	s := internal.NewServerTCP(timeout, args[0], args[1])
+	if err := s.ConnectAndServe(); err != nil {
 		os.Exit(1)
 	}
 }
