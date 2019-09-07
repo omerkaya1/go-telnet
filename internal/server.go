@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// ServerTCP type
 type ServerTCP struct {
 	host    string
 	port    string
@@ -20,6 +21,7 @@ type ServerTCP struct {
 	wg      sync.WaitGroup
 }
 
+// NewServerTCP returns new ServerTCP object to the caller
 func NewServerTCP(t int, h, p string) *ServerTCP {
 	return &ServerTCP{
 		host:    h,
@@ -29,6 +31,7 @@ func NewServerTCP(t int, h, p string) *ServerTCP {
 	}
 }
 
+// ConnectAndServe dials to the specified host and subtly handles unidirectional data flow
 func (s *ServerTCP) ConnectAndServe() error {
 	d := &net.Dialer{}
 	ctx := context.Background()
@@ -65,6 +68,7 @@ func (s *ServerTCP) ConnectAndServe() error {
 	return nil
 }
 
+// ReadRoutine reads data received from the Network connection and logs it
 func (s *ServerTCP) ReadRoutine(ctx context.Context, conn net.Conn) {
 	output := make(chan string)
 	err := make(chan error)
@@ -86,6 +90,7 @@ READ:
 	log.Printf("ReadRoutine has finished execution!")
 }
 
+// WriteRoutine writes data received from STDIN to the server recipient
 func (s *ServerTCP) WriteRoutine(ctx context.Context, conn net.Conn) {
 	// These two channels will control the main work cycle
 	inputChan := make(chan string)
