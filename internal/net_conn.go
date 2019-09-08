@@ -13,26 +13,25 @@ import (
 	"time"
 )
 
-// ServerTCP type
-type ServerTCP struct {
+// NetworkConn type
+type NetworkConn struct {
 	host    string
 	port    string
 	timeout int
 	wg      sync.WaitGroup
 }
 
-// NewServerTCP returns new ServerTCP object to the caller
-func NewServerTCP(t int, h, p string) *ServerTCP {
-	return &ServerTCP{
+// NewNetworkConn returns new NetworkConn object to the caller
+func NewNetworkConn(t int, h, p string) *NetworkConn {
+	return &NetworkConn{
 		host:    h,
 		port:    p,
 		timeout: t,
-		wg:      sync.WaitGroup{},
 	}
 }
 
 // ConnectAndServe dials to the specified host and subtly handles unidirectional data flow
-func (s *ServerTCP) ConnectAndServe() error {
+func (s *NetworkConn) ConnectAndServe() error {
 	d := &net.Dialer{}
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(s.timeout)*time.Second)
@@ -48,7 +47,7 @@ func (s *ServerTCP) ConnectAndServe() error {
 	signal.Notify(exitChan, os.Interrupt)
 	go func() {
 		<-exitChan
-		log.Fatal("Received SIGINT")
+		log.Println("Received SIGINT")
 	}()
 
 	s.wg.Add(1)
@@ -69,7 +68,7 @@ func (s *ServerTCP) ConnectAndServe() error {
 }
 
 // ReadRoutine reads data received from the Network connection and logs it
-func (s *ServerTCP) ReadRoutine(ctx context.Context, conn net.Conn) {
+func (s *NetworkConn) ReadRoutine(ctx context.Context, conn net.Conn) {
 	output := make(chan string)
 	err := make(chan error)
 	go s.handleInput(conn, output, err)
@@ -91,7 +90,7 @@ READ:
 }
 
 // WriteRoutine writes data received from STDIN to the server recipient
-func (s *ServerTCP) WriteRoutine(ctx context.Context, conn net.Conn) {
+func (s *NetworkConn) WriteRoutine(ctx context.Context, conn net.Conn) {
 	// These two channels will control the main work cycle
 	inputChan := make(chan string)
 	errChan := make(chan error)
@@ -115,7 +114,7 @@ WRITE:
 	log.Printf("WriteRoutine has finished execution!")
 }
 
-func (s *ServerTCP) handleInput(src io.Reader, inputChan chan string, errChan chan error) {
+func (s *NetworkConn) handleInput(src io.Reader, inputChan chan string, errChan chan error) {
 	r := bufio.NewReader(src)
 	for {
 		line, err := r.ReadString('\n')

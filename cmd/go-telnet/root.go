@@ -1,8 +1,9 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"github.com/omerkaya1/go-telnet/internal"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -31,8 +32,8 @@ func Execute() {
 }
 
 func rootCommand(cmd *cobra.Command, args []string) {
-	s := internal.NewServerTCP(timeout, args[0], args[1])
+	s := internal.NewNetworkConn(timeout, args[0], args[1])
 	if err := s.ConnectAndServe(); err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }

@@ -1,4 +1,4 @@
-BUILD = $(CURDIR)/bin
+BUILD= $(CURDIR)/bin
 $(shell mkdir -p $(BUILD))
 export GO111MODULE=on
 export GOPATH=$(go env GOPATH)
@@ -32,11 +32,11 @@ lint: setup ## Runs all the linters
 
 .PHONY: build
 build: ## Builds the project
-	go build -o $(BUILD)/go-telnet
+	go build -o $(BUILD)/go-telnet $(CURDIR)/cmd/go-telnet
 
 .PHONY: clean
 clean: ## Remove temporary files
-	go clean
+	go clean $(CURDIR)/cmd/go-telnet
 	rm -rf $(BUILD)
 	rm -rf coverage.txt
 
