@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 
 // Execute is a method that runs the root command of the programme
 func Execute() {
-	rootCmd.PersistentFlags().IntVarP(&timeout, "timeout", "t", 30, "timeout before exiting the programme")
+	rootCmd.PersistentFlags().IntVarP(&timeout, "timeout", "t", 30, "timeout before exiting the programme (default is 30s")
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

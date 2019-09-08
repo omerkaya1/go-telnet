@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 )
 
+// ServerTCP type
 type ServerTCP struct {
 	host    string
 	port    string
@@ -19,6 +21,7 @@ type ServerTCP struct {
 	wg      sync.WaitGroup
 }
 
+// NewServerTCP returns new ServerTCP object to the caller
 func NewServerTCP(t int, h, p string) *ServerTCP {
 	return &ServerTCP{
 		host:    h,
@@ -28,6 +31,7 @@ func NewServerTCP(t int, h, p string) *ServerTCP {
 	}
 }
 
+// ConnectAndServe dials to the specified host and subtly handles unidirectional data flow
 func (s *ServerTCP) ConnectAndServe() error {
 	d := &net.Dialer{}
 	ctx := context.Background()
@@ -35,7 +39,7 @@ func (s *ServerTCP) ConnectAndServe() error {
 
 	conn, err := d.DialContext(ctx, "tcp", fmt.Sprintf("%s:%s", s.host, s.port))
 	if err != nil {
-		log.Fatalf("Cannot connect: %v", err)
+		log.Fatalf("Connection error: %v", err)
 	}
 	defer conn.Close()
 
@@ -61,53 +65,64 @@ func (s *ServerTCP) ConnectAndServe() error {
 
 	s.wg.Wait()
 	cancel()
-	//conn.Close()
 	return nil
 }
 
+// ReadRoutine reads data received from the Network connection and logs it
 func (s *ServerTCP) ReadRoutine(ctx context.Context, conn net.Conn) {
-	scanner := bufio.NewScanner(conn)
+	output := make(chan string)
+	err := make(chan error)
+	go s.handleInput(conn, output, err)
+
 READ:
 	for {
 		select {
 		case <-ctx.Done():
 			break READ
-		default:
-			if !scanner.Scan() {
-				log.Printf("CANNOT SCAN")
-				break READ
+		case line, ok := <-output:
+			if ok {
+				log.Printf("Server: %s", line)
 			}
-			text := scanner.Text()
-			log.Printf("Server: %s", text)
+		case e := <-err:
+			log.Fatal(e)
 		}
 	}
-	log.Printf("Finished readRoutine")
+	log.Printf("ReadRoutine has finished execution!")
 }
 
+// WriteRoutine writes data received from STDIN to the server recipient
 func (s *ServerTCP) WriteRoutine(ctx context.Context, conn net.Conn) {
-	scanner := bufio.NewScanner(os.Stdin)
+	// These two channels will control the main work cycle
+	inputChan := make(chan string)
+	errChan := make(chan error)
+	go s.handleInput(os.Stdin, inputChan, errChan)
+
 WRITE:
 	for {
 		select {
 		case <-ctx.Done():
 			break WRITE
-		default:
-			if !scanner.Scan() {
-				break WRITE
+		case in, ok := <-inputChan:
+			if ok {
+				if _, err := conn.Write([]byte(fmt.Sprintf("Client: %s", in))); err != nil {
+					log.Fatalf("error: %v", err)
+				}
 			}
-			str := scanner.Text()
-			log.Printf("Client: %v\n", str)
-
-			if _, err := conn.Write([]byte(fmt.Sprintf("%s\n", str))); err != nil {
-				log.Panicf("error: %v", err)
-				break WRITE
-			}
+		case e := <-errChan:
+			log.Fatalf("error: %v", e)
 		}
-
 	}
-	log.Printf("Finished writeRoutine")
+	log.Printf("WriteRoutine has finished execution!")
 }
 
-func (s *ServerTCP) handleInput(inputChan chan string, errChan chan error) {
-	// TODO: Move the scanner func here and handle the input intelligently!
+func (s *ServerTCP) handleInput(src io.Reader, inputChan chan string, errChan chan error) {
+	r := bufio.NewReader(src)
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			errChan <- err
+			break
+		}
+		inputChan <- line
+	}
 }

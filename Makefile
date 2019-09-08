@@ -7,7 +7,6 @@ export GOPATH=$(go env GOPATH)
 setup: ## Install all the build and lint dependencies
 	go get -u golang.org/x/tools
 	go get -u golang.org/x/lint/golint
-	go get -u github.com/golang/mock/gomock
 
 .PHONY: mod
 mod: ## Runs mod
@@ -33,7 +32,7 @@ lint: setup ## Runs all the linters
 
 .PHONY: build
 build: ## Builds the project
-	go build -o $(BUILD)/goenvdir
+	go build -o $(BUILD)/go-telnet
 
 .PHONY: clean
 clean: ## Remove temporary files
